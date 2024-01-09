@@ -1,0 +1,78 @@
+MOG2
+É inicializado com K distribuições gaussianas, com parâmetros miu (μ), representa a média, sigma(σ), representa
+a covariância, e pi(π) que representa o peso de cada distribuição. 
+Uma função gaussiana é uma função densidade de probabilidade da distribuição normal, um gráfico parecido com
+um sino, da distribuição de uma variável aleatória contínua.
+A probabilidade condicional de encontrar um pixel com determinados valores RGB, dado o dataset Xt e a mistura
+de components de FG e BG.
+Essa probabilidade obtêm-se pelo somatório de para cada componente da mistura gaussiana, que é uma distribuição
+gaussiana, da função densidade de probabilidade do pixel com intensidade RGB a multiplicar pelo seu peso na
+mistura.
+I é a matriz identidade, que é utilizada para facilitar os cálculos e usar menos poder computacional.
+
+Os parâmetros são depois atualizados para limitar a influência de dados mais antigos, de forma exponencial.
+
+KNN
+Inicializa um buffer com N amostras para as frames iniciais.
+Estimativa da densidade do kernel, (kernel uniforme) começa por contar o número de amostras do dataset Xt, que
+se encontra no volume V do kernel. V é o volume da hiperesfera(esfera num espaço multi-deminsional > 3D)
+com diâmetro D. A estimativa da densidade é dada por:
+A probabilidade condicional de encontrar um pixel com determinados valores RGB, dado o dataset Xt e a mistura
+de components de FG e BG.
+Essa probabilidade obtêm-se pelo somatório das funções do kernel, onde no numerador temos a diferença absoluta
+entre o valor de intensidade dos dois pixeis, o que estamos a obter a probabilidade e o pixel m vizinho, num
+instante temporal t e numa janela de observações T (T é o tamanho da janela temporal) e no denominador temos
+o diâmetro da hiperesfera, se este valor for menor que 0.5 o valor da função do kernel é 0, sendo considerado
+1 caso contrário.
+
+CNT
+Não derivou de um artigo, a implementação está disponível online apenas faz diferença absoluta entre da cor
+do pixel neste momento com a cor do pixel na frame anterior se esta diferença for menor que o threshold dado
+inicialmente, é considerado BG a não ser que a estabilidade desse pixel seja igual à menor requirida, neste
+caso é FG. Se a diferença for maior que o threshold é FG e dá reset à estabilidade do pixel.
+A variável minPixelStability controla a sensibilidade do algoritmo a mudanças do pixel com o tempo, um valor
+maior significa que o pixel terá de apresentar uma maior consitência da cor num período de tempo mais largo
+para ser considerado para do BG.
+
+GMG
+Uma frame no instante de tempo é quantizada no espaço de cor, a partir do histograma no espaço RGB que é 
+guardado para cada pixel, e comparada com modelo estatístico do BG, que é as primeiras T frames do video
+utilizadas como dados de treino para inicializar a função massa probabilidade (função de distribuição de uma
+variável discreta) estimada. Esta função é interpretada como um vetor ao cubo, um eixo por cada cor.
+A partir da regra de Bayes calcula-se a probabilidade de um pixel pertencer ao FG ou BG para cada cor, como
+p(FG) é uma constante, o que afeta a sensibilidade da segmentação, e, p(BG) = 1 - p(FG), sem um modelo 
+estatístico não podemos usar a regra de Bayes explicitamente, então usa-se a Assumption I-C5 onde 
+p(f|FG) = 1 - p(f|BG). Se p(f|BG) = 1, pertence ao BG se for 0 pertence ao FG, para cada pixel temos
+Pij (k) = p(F|fij (k)) = 1 − p(B|fij (k)). A imagem é depois filtrada com operações morfológicas e 
+segmentada em bouding boxes. Com as novas probabilidades após realizar opening e depois closing, aplica-se
+threshold onde se verifica que a probabilidade é maior é considerado FG caso contrário é BG. É novamente
+aplicada opening e closing na imagem binária resultante. E nesta é depois aplicado o algoritmo de
+componentes conectados, que deteta 8 regions conectadas de pixeis designados como FG (usam a função
+findContours() do OpenCV). Finalmente, é feito o update dos histogramas. O filtro de Kalman é usado para
+resolver problemas de multiple tracking, e fazer tracking de movimento no vídeo, onde gera previsões de 
+bounding boxes é depois aplicado o algoritmo de associação Gale-Shapley para o par de bouding box e bouding
+box prevista, o resultado é uma coleção de pixeis identificados como FG, o banco do filtro de kalman também
+é atualizado.
+
+LSBP
+SVD é a decomposição de uma matriz real. 
+M = UΣV*
+onde U é uma matriz unitária m×m real ou complexa, Σ é uma matriz retangular diagonal m×n com números reais 
+não-negativos na diagonal, e V* (a conjugada transposta de V) é uma matriz unitária n×n real ou complexa.
+A matriz M é decomposta em  três transformações simples: a rotação V*, a escala (esticamento) Σ juntamente 
+com os eixos rotacionados e uma segunda rotação U.
+
+where ic is the central point value obtained from Equation(2), ip represents the N-neighborhood point value 
+also obtained from Equation (2). τ is the similarity threshold which is set to 0.05 in this paper. S(·) is 
+a sign function defined as follows:
+ 
+H é a distância de Hamming (XOR operator), T é o parâmetro de atualização, Int é a intensidade do pixel, 
+B é modelo do BG, R é o threshold da distância da intensidade da cor e LSBP é a equação 12.
+
+GSOC
+Google Summer of Code background subtractor, é inspirado no LSBP, mas processa frames independentemente
+tirando proveito do paralelismo dentro do OpenCV.
+
+MOG
+Usa os mesmos princípios que o MOG2 já que ambos derivam da mistura de modelos gaussiana, o que o MOG2 consegue
+fazer a mais é deteção de sombras, incorpora uma taxa de aprendizagem adaptativa e é em geral mais eficiente.
